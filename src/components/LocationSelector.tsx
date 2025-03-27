@@ -107,7 +107,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ onLocationChange, d
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-96 p-0 bg-white rounded-xl shadow-lg border border-gray-200" align="start">
+        <PopoverContent className="w-96 p-0 bg-white rounded-xl shadow-lg border border-gray-200 z-50" align="start">
           <div className="p-4 border-b border-gray-100">
             <h3 className="text-sm font-medium text-gray-700">Localização</h3>
             <p className="text-xs text-gray-500 mt-1">Selecione o estado e a cidade</p>

@@ -49,6 +49,7 @@ const BikeDetailPage = () => {
 
         setBike({
           ...bikeData,
+          phone: bikeData.phone || '',
           images: imagesData?.map(img => img.url) || ["/placeholder.svg"]
         });
       } catch (error) {
@@ -89,17 +90,19 @@ const BikeDetailPage = () => {
 
       // If there are new images, add them
       if (bikeData.images && bikeData.images.length > 0) {
-        const file = bikeData.images[0];
-        const imageUrl = URL.createObjectURL(file);
-        
-        const { error: imageError } = await supabase
-          .from('bike_images')
-          .insert({
-            bike_id: id,
-            url: imageUrl
-          });
+        for (const file of bikeData.images) {
+          const fileName = `${id}/${Date.now()}-${file.name}`;
+          const imageUrl = URL.createObjectURL(file);
+          
+          const { error: imageError } = await supabase
+            .from('bike_images')
+            .insert({
+              bike_id: id,
+              url: imageUrl
+            });
 
-        if (imageError) throw imageError;
+          if (imageError) throw imageError;
+        }
       }
 
       // Reload bike details
@@ -120,6 +123,7 @@ const BikeDetailPage = () => {
 
       setBike({
         ...updatedBike,
+        phone: updatedBike.phone || '',
         images: updatedImages?.map(img => img.url) || ["/placeholder.svg"]
       });
 

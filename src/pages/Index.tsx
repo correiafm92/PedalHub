@@ -47,7 +47,7 @@ const Index = () => {
             description: bike.description,
             seller: bike.seller,
             location: bike.location,
-            phone: bike.phone,
+            phone: bike.phone || '',
             createdAt: new Date(bike.created_at),
             images: imagesData?.map(img => img.url) || ["/placeholder.svg"]
           });
@@ -121,7 +121,7 @@ const Index = () => {
         images: imageUrls.length > 0 ? imageUrls : ["/placeholder.svg"],
         description: newBike.description,
         seller: newBike.seller,
-        phone: newBike.phone,
+        phone: newBike.phone || '',
         location: newBike.location,
         createdAt: new Date(newBike.created_at)
       };

@@ -10,3 +10,12 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Let's make sure the database schema is up to date
+// Adding phone column to bikes table
+(async () => {
+  const { error } = await supabase.rpc('add_phone_column_if_missing');
+  if (error && !error.message.includes('function "add_phone_column_if_missing" does not exist')) {
+    console.error('Error adding phone column:', error);
+  }
+})();

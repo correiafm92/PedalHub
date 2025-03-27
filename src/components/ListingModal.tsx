@@ -21,7 +21,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import ImageUpload from "./ImageUpload";
-import { bikeSizes } from "@/utils/data";
+import { bikeSizes, brazilianStates } from "@/utils/data";
 import { toast } from "sonner";
 import LocationSelector from "./LocationSelector";
 
