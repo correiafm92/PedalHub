@@ -82,21 +82,18 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
       createdAt: new Date()
     };
     
-    // Simulate API call delay
-    setTimeout(() => {
-      onSubmit(bikeData);
-      
-      // Reset form
-      setBikeName("");
-      setBikeSize("");
-      setDescription("");
-      setSellerName("");
-      setImages([]);
-      setIsSubmitting(false);
-      
-      onClose();
-      toast.success("Anúncio publicado com sucesso!");
-    }, 1000);
+    // Submit the data to parent component
+    onSubmit(bikeData);
+    
+    // Reset form
+    setBikeName("");
+    setBikeSize("");
+    setDescription("");
+    setSellerName("");
+    setImages([]);
+    setIsSubmitting(false);
+    
+    onClose();
   };
 
   return (

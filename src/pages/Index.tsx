@@ -4,61 +4,158 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LocationSelector from "@/components/LocationSelector";
 import BikeCard from "@/components/BikeCard";
+import BikeFilter from "@/components/BikeFilter";
 import ListingModal from "@/components/ListingModal";
-import { BikeType, sampleBikes } from "@/utils/data";
+import { BikeType } from "@/utils/data";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Index = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [bikes, setBikes] = useState<BikeType[]>(sampleBikes);
-  const [filteredBikes, setFilteredBikes] = useState<BikeType[]>(sampleBikes);
+  const [bikes, setBikes] = useState<BikeType[]>([]);
+  const [filteredBikes, setFilteredBikes] = useState<BikeType[]>([]);
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch bikes from Supabase
+  useEffect(() => {
+    const fetchBikes = async () => {
+      setIsLoading(true);
+      try {
+        const { data: bikesData, error: bikesError } = await supabase
+          .from('bikes')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (bikesError) throw bikesError;
+
+        const formattedBikes: BikeType[] = [];
+
+        for (const bike of bikesData || []) {
+          // Fetch images for each bike
+          const { data: imagesData, error: imagesError } = await supabase
+            .from('bike_images')
+            .select('url')
+            .eq('bike_id', bike.id);
+
+          if (imagesError) throw imagesError;
+
+          formattedBikes.push({
+            id: bike.id,
+            name: bike.name,
+            size: bike.size,
+            description: bike.description,
+            seller: bike.seller,
+            location: bike.location,
+            createdAt: new Date(bike.created_at),
+            images: imagesData?.map(img => img.url) || ["/placeholder.svg"]
+          });
+        }
+
+        setBikes(formattedBikes);
+        setFilteredBikes(formattedBikes);
+      } catch (error) {
+        console.error('Error fetching bikes:', error);
+        toast.error('Erro ao carregar anúncios');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBikes();
+  }, []);
 
   const handleLocationChange = (state: string, city: string) => {
     setSelectedState(state);
     setSelectedCity(city);
   };
 
-  const handleAddBike = (bikeData: any) => {
-    // In a real app, this would send data to an API
-    // For now, we'll just add it to our local state
-    
-    // Create URLs for the images (in a real app, these would be uploaded)
-    const imageUrls = bikeData.images.length > 0 
-      ? [URL.createObjectURL(bikeData.images[0])]
-      : ["/placeholder.svg"];
-
-    const newBike: BikeType = {
-      id: (bikes.length + 1).toString(),
-      name: bikeData.name,
-      size: bikeData.size,
-      images: imageUrls,
-      description: bikeData.description,
-      seller: bikeData.seller,
-      location: selectedState && selectedCity 
-        ? `${selectedCity}, ${selectedState}` 
-        : "Localização não especificada",
-      createdAt: new Date()
-    };
-
-    setBikes([newBike, ...bikes]);
+  const handleSizeChange = (size: string) => {
+    setSelectedSize(size);
   };
 
-  // Filter bikes based on selected location
+  const handleAddBike = async (bikeData: any) => {
+    try {
+      // Insert bike data to Supabase
+      const { data: newBike, error: bikeError } = await supabase
+        .from('bikes')
+        .insert({
+          name: bikeData.name,
+          size: bikeData.size,
+          description: bikeData.description,
+          seller: bikeData.seller,
+          location: selectedState && selectedCity 
+            ? `${selectedCity}, ${selectedState}` 
+            : "Localização não especificada"
+        })
+        .select()
+        .single();
+
+      if (bikeError) throw bikeError;
+
+      // Handle image upload
+      if (bikeData.images && bikeData.images.length > 0) {
+        const file = bikeData.images[0];
+        const fileName = `${newBike.id}/${Date.now()}-${file.name}`;
+        
+        // Here we would normally upload to Supabase Storage
+        // Since we don't have storage bucket set up, we'll use local URL
+        const imageUrl = URL.createObjectURL(file);
+        
+        // Insert image URL into the bike_images table
+        const { error: imageError } = await supabase
+          .from('bike_images')
+          .insert({
+            bike_id: newBike.id,
+            url: imageUrl
+          });
+
+        if (imageError) throw imageError;
+      }
+
+      // Add the new bike to our state
+      const addedBike: BikeType = {
+        id: newBike.id,
+        name: newBike.name,
+        size: newBike.size,
+        images: bikeData.images.length > 0 
+          ? [URL.createObjectURL(bikeData.images[0])]
+          : ["/placeholder.svg"],
+        description: newBike.description,
+        seller: newBike.seller,
+        location: newBike.location,
+        createdAt: new Date(newBike.created_at)
+      };
+
+      setBikes(prevBikes => [addedBike, ...prevBikes]);
+      toast.success('Anúncio publicado com sucesso!');
+    } catch (error) {
+      console.error('Error adding bike:', error);
+      toast.error('Erro ao publicar anúncio');
+    }
+  };
+
+  // Filter bikes based on selected location and size
   useEffect(() => {
+    let filtered = bikes;
+
+    // Filter by location
     if (selectedState && selectedCity) {
-      // In a real app, this would be a server-side filter
-      // Here we're just simulating it client-side
-      const locationString = `${selectedCity}, ${selectedState}`;
-      const filtered = bikes.filter(bike => 
+      filtered = filtered.filter(bike => 
         bike.location.includes(selectedState) ||
         bike.location.includes(selectedCity)
       );
-      setFilteredBikes(filtered);
-    } else {
-      setFilteredBikes(bikes);
     }
-  }, [selectedState, selectedCity, bikes]);
+
+    // Filter by size
+    if (selectedSize) {
+      filtered = filtered.filter(bike => bike.size === selectedSize);
+    }
+
+    setFilteredBikes(filtered);
+  }, [selectedState, selectedCity, selectedSize, bikes]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -83,19 +180,37 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-8">
         {/* Location Selector and Filters */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex-1 max-w-xs">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="md:col-span-1">
             <LocationSelector onLocationChange={handleLocationChange} />
           </div>
           
-          <div className="text-sm text-gray-500">
-            {filteredBikes.length} {filteredBikes.length === 1 ? 'anúncio' : 'anúncios'} encontrados
+          <div className="md:col-span-2">
+            <BikeFilter 
+              selectedSize={selectedSize} 
+              onSizeChange={handleSizeChange} 
+            />
+          </div>
+          
+          <div className="md:col-span-1 flex items-end justify-end">
+            <div className="text-sm text-gray-500">
+              {filteredBikes.length} {filteredBikes.length === 1 ? 'anúncio' : 'anúncios'} encontrados
+            </div>
           </div>
         </div>
         
         {/* Bike Listings */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredBikes.length > 0 ? (
+          {isLoading ? (
+            // Loading state
+            Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="bg-gray-200 aspect-[4/3] rounded-xl mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2 w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))
+          ) : filteredBikes.length > 0 ? (
             filteredBikes.map((bike) => (
               <div key={bike.id} className="animate-fade-in">
                 <BikeCard bike={bike} />
@@ -123,7 +238,7 @@ const Index = () => {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhuma bike encontrada</h3>
-              <p className="text-gray-500 mb-6">Não encontramos anúncios nesta localização</p>
+              <p className="text-gray-500 mb-6">Não encontramos anúncios com os filtros selecionados</p>
               <Button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-black hover:bg-gray-800 text-white"
