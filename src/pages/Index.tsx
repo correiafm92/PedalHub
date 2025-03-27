@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,6 @@ const Index = () => {
   const [selectedSize, setSelectedSize] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch bikes from Supabase
   useEffect(() => {
     const fetchBikes = async () => {
       setIsLoading(true);
@@ -34,7 +32,6 @@ const Index = () => {
         const formattedBikes: BikeType[] = [];
 
         for (const bike of bikesData || []) {
-          // Fetch images for each bike
           const { data: imagesData, error: imagesError } = await supabase
             .from('bike_images')
             .select('url')
@@ -78,7 +75,6 @@ const Index = () => {
 
   const handleAddBike = async (bikeData: any) => {
     try {
-      // Insert bike data to Supabase
       const { data: newBike, error: bikeError } = await supabase
         .from('bikes')
         .insert({
@@ -86,25 +82,22 @@ const Index = () => {
           size: bikeData.size,
           description: bikeData.description,
           seller: bikeData.seller,
-          location: selectedState && selectedCity 
+          phone: bikeData.phone,
+          location: bikeData.location || (selectedState && selectedCity 
             ? `${selectedCity}, ${selectedState}` 
-            : "Localização não especificada"
+            : "Localização não especificada")
         })
         .select()
         .single();
 
       if (bikeError) throw bikeError;
 
-      // Handle image upload
       if (bikeData.images && bikeData.images.length > 0) {
         const file = bikeData.images[0];
         const fileName = `${newBike.id}/${Date.now()}-${file.name}`;
         
-        // Here we would normally upload to Supabase Storage
-        // Since we don't have storage bucket set up, we'll use local URL
         const imageUrl = URL.createObjectURL(file);
         
-        // Insert image URL into the bike_images table
         const { error: imageError } = await supabase
           .from('bike_images')
           .insert({
@@ -115,7 +108,6 @@ const Index = () => {
         if (imageError) throw imageError;
       }
 
-      // Add the new bike to our state
       const addedBike: BikeType = {
         id: newBike.id,
         name: newBike.name,
@@ -125,6 +117,7 @@ const Index = () => {
           : ["/placeholder.svg"],
         description: newBike.description,
         seller: newBike.seller,
+        phone: newBike.phone,
         location: newBike.location,
         createdAt: new Date(newBike.created_at)
       };
@@ -137,11 +130,9 @@ const Index = () => {
     }
   };
 
-  // Filter bikes based on selected location and size
   useEffect(() => {
     let filtered = bikes;
 
-    // Filter by location
     if (selectedState && selectedCity) {
       filtered = filtered.filter(bike => 
         bike.location.includes(selectedState) ||
@@ -149,7 +140,6 @@ const Index = () => {
       );
     }
 
-    // Filter by size
     if (selectedSize) {
       filtered = filtered.filter(bike => bike.size === selectedSize);
     }
@@ -159,7 +149,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
       <header className="sticky top-0 z-10 backdrop-blur-lg bg-white/90 border-b border-gray-100 shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center">
@@ -179,7 +168,6 @@ const Index = () => {
       </header>
       
       <main className="container mx-auto px-4 py-8">
-        {/* Location Selector and Filters */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="md:col-span-1">
             <LocationSelector onLocationChange={handleLocationChange} />
@@ -199,10 +187,8 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Bike Listings */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {isLoading ? (
-            // Loading state
             Array.from({ length: 8 }).map((_, index) => (
               <div key={index} className="animate-pulse">
                 <div className="bg-gray-200 aspect-[4/3] rounded-xl mb-4"></div>
@@ -250,7 +236,6 @@ const Index = () => {
         </div>
       </main>
       
-      {/* Footer */}
       <footer className="bg-gray-50 border-t border-gray-100 py-8 mt-12">
         <div className="container mx-auto px-4">
           <div className="text-center text-gray-500 text-sm">
@@ -260,7 +245,6 @@ const Index = () => {
         </div>
       </footer>
       
-      {/* Listing Modal */}
       <ListingModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

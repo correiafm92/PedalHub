@@ -339,10 +339,11 @@ export interface BikeType {
   id: string;
   name: string;
   size: string;
-  images: string[];
   description: string;
   seller: string;
   location: string;
+  phone?: string;
+  images: string[];
   createdAt: Date;
 }
 

@@ -4,12 +4,15 @@ import { Calendar, MapPin } from "lucide-react";
 import { BikeType } from "@/utils/data";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface BikeCardProps {
   bike: BikeType;
 }
 
 const BikeCard: React.FC<BikeCardProps> = ({ bike }) => {
+  const navigate = useNavigate();
+  
   const formatDate = (date: Date) => {
     return formatDistanceToNow(date, {
       addSuffix: true,
@@ -17,8 +20,15 @@ const BikeCard: React.FC<BikeCardProps> = ({ bike }) => {
     });
   };
 
+  const handleClick = () => {
+    navigate(`/bike/${bike.id}`);
+  };
+
   return (
-    <div className="hover-scale rounded-xl overflow-hidden bg-white border border-gray-100 shadow-sm transition-all duration-300">
+    <div 
+      className="hover-scale rounded-xl overflow-hidden bg-white border border-gray-100 shadow-sm transition-all duration-300 cursor-pointer"
+      onClick={handleClick}
+    >
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
         {bike.images && bike.images.length > 0 ? (
           <img 

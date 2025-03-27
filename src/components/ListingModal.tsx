@@ -20,7 +20,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import ImageUpload from "./ImageUpload";
-import { bikeSizes } from "@/utils/data";
+import { bikeSizes, brazilianStates } from "@/utils/data";
 import { toast } from "sonner";
 
 interface ListingModalProps {
@@ -34,6 +34,8 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
   const [bikeSize, setBikeSize] = useState("");
   const [description, setDescription] = useState("");
   const [sellerName, setSellerName] = useState("");
+  const [location, setLocation] = useState("");
+  const [phone, setPhone] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,6 +67,16 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
       return;
     }
     
+    if (!location.trim()) {
+      toast.error("Por favor, informe a localização");
+      return;
+    }
+    
+    if (!phone.trim()) {
+      toast.error("Por favor, informe um telefone para contato");
+      return;
+    }
+    
     if (images.length === 0) {
       toast.error("Por favor, adicione pelo menos uma foto");
       return;
@@ -78,6 +90,8 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
       size: bikeSize,
       description,
       seller: sellerName,
+      location,
+      phone,
       images,
       createdAt: new Date()
     };
@@ -90,6 +104,8 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
     setBikeSize("");
     setDescription("");
     setSellerName("");
+    setLocation("");
+    setPhone("");
     setImages([]);
     setIsSubmitting(false);
     
@@ -145,6 +161,32 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="location" className="text-sm font-medium">
+                Localização
+              </Label>
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Ex: São Paulo, SP"
+                className="mt-1 input-field"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="phone" className="text-sm font-medium">
+                Telefone para Contato
+              </Label>
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Ex: (11) 98765-4321"
+                className="mt-1 input-field"
+              />
             </div>
             
             <div>
