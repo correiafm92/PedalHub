@@ -1,4 +1,3 @@
-
 export interface CityOption {
   value: string;
   label: string;
@@ -343,11 +342,10 @@ export interface BikeType {
   seller: string;
   location: string;
   phone?: string;
-  images: string[];
   createdAt: Date;
+  images?: string[];
 }
 
-// Sample data for bikes
 export const sampleBikes: BikeType[] = [
   {
     id: "1",

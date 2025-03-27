@@ -1,12 +1,13 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter 
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,16 +21,26 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import ImageUpload from "./ImageUpload";
-import { bikeSizes, brazilianStates } from "@/utils/data";
+import { bikeSizes } from "@/utils/data";
 import { toast } from "sonner";
+import LocationSelector from "./LocationSelector";
 
 interface ListingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (bikeData: any) => void;
+  editBike?: {
+    id: string;
+    name: string;
+    size: string;
+    description: string;
+    seller: string;
+    phone: string;
+    location: string;
+  };
 }
 
-const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }) => {
+const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit, editBike }) => {
   const [bikeName, setBikeName] = useState("");
   const [bikeSize, setBikeSize] = useState("");
   const [description, setDescription] = useState("");
@@ -38,9 +49,36 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
   const [phone, setPhone] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+
+  // Populate form fields if in edit mode
+  useEffect(() => {
+    if (editBike) {
+      setBikeName(editBike.name);
+      setBikeSize(editBike.size);
+      setDescription(editBike.description);
+      setSellerName(editBike.seller);
+      setPhone(editBike.phone);
+      setLocation(editBike.location);
+    }
+  }, [editBike]);
 
   const handleImagesChange = (newImages: File[]) => {
     setImages(newImages);
+  };
+
+  const handleLocationChange = (state: string, city: string) => {
+    setSelectedState(state);
+    setSelectedCity(city);
+    
+    // Find the state and city objects
+    const stateObj = brazilianStates.find(s => s.value === state);
+    const cityObj = stateObj?.cities.find(c => c.value === city);
+    
+    if (stateObj && cityObj) {
+      setLocation(`${cityObj.label}, ${stateObj.label}`);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,7 +115,8 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
       return;
     }
     
-    if (images.length === 0) {
+    // Only require images for new listings, not for edits
+    if (!editBike && images.length === 0) {
       toast.error("Por favor, adicione pelo menos uma foto");
       return;
     }
@@ -99,16 +138,18 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
     // Submit the data to parent component
     onSubmit(bikeData);
     
-    // Reset form
-    setBikeName("");
-    setBikeSize("");
-    setDescription("");
-    setSellerName("");
-    setLocation("");
-    setPhone("");
-    setImages([]);
-    setIsSubmitting(false);
+    // Reset form if not editing
+    if (!editBike) {
+      setBikeName("");
+      setBikeSize("");
+      setDescription("");
+      setSellerName("");
+      setLocation("");
+      setPhone("");
+      setImages([]);
+    }
     
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -117,7 +158,9 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
       <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden bg-white rounded-2xl">
         <DialogHeader className="p-6 pb-2">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-semibold">Anunciar Bicicleta</DialogTitle>
+            <DialogTitle className="text-xl font-semibold">
+              {editBike ? 'Editar Anúncio' : 'Anunciar Bicicleta'}
+            </DialogTitle>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -128,9 +171,12 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
               <span className="sr-only">Fechar</span>
             </Button>
           </div>
+          <DialogDescription className="text-sm text-gray-500 mt-1">
+            Preencha os dados da sua bicicleta para anunciar
+          </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6 px-6">
+        <form onSubmit={handleSubmit} className="space-y-5 px-6 py-2 max-h-[80vh] overflow-y-auto">
           <div className="space-y-4">
             <div>
               <Label htmlFor="bikeName" className="text-sm font-medium">
@@ -167,13 +213,12 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
               <Label htmlFor="location" className="text-sm font-medium">
                 Localização
               </Label>
-              <Input
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Ex: São Paulo, SP"
-                className="mt-1 input-field"
-              />
+              <div className="mt-1">
+                <LocationSelector 
+                  onLocationChange={handleLocationChange} 
+                  defaultLocation={location}
+                />
+              </div>
             </div>
             
             <div>
@@ -196,6 +241,11 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
               <div className="mt-1">
                 <ImageUpload onImagesChange={handleImagesChange} />
               </div>
+              {editBike && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Adicionar novas fotos. As fotos existentes serão mantidas.
+                </p>
+              )}
             </div>
             
             <div>
@@ -240,7 +290,7 @@ const ListingModal: React.FC<ListingModalProps> = ({ isOpen, onClose, onSubmit }
               className="bg-black hover:bg-gray-800 text-white"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Publicando...' : 'Publicar Anúncio'}
+              {isSubmitting ? 'Publicando...' : editBike ? 'Salvar Alterações' : 'Publicar Anúncio'}
             </Button>
           </DialogFooter>
         </form>

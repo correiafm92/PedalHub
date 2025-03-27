@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ const Index = () => {
             description: bike.description,
             seller: bike.seller,
             location: bike.location,
+            phone: bike.phone,
             createdAt: new Date(bike.created_at),
             images: imagesData?.map(img => img.url) || ["/placeholder.svg"]
           });
@@ -92,29 +94,31 @@ const Index = () => {
 
       if (bikeError) throw bikeError;
 
+      // Handle image uploads
+      let imageUrls: string[] = [];
+      
       if (bikeData.images && bikeData.images.length > 0) {
-        const file = bikeData.images[0];
-        const fileName = `${newBike.id}/${Date.now()}-${file.name}`;
-        
-        const imageUrl = URL.createObjectURL(file);
-        
-        const { error: imageError } = await supabase
-          .from('bike_images')
-          .insert({
-            bike_id: newBike.id,
-            url: imageUrl
-          });
+        for (const file of bikeData.images) {
+          const fileName = `${newBike.id}/${Date.now()}-${file.name}`;
+          const imageUrl = URL.createObjectURL(file);
+          imageUrls.push(imageUrl);
+          
+          const { error: imageError } = await supabase
+            .from('bike_images')
+            .insert({
+              bike_id: newBike.id,
+              url: imageUrl
+            });
 
-        if (imageError) throw imageError;
+          if (imageError) throw imageError;
+        }
       }
 
       const addedBike: BikeType = {
         id: newBike.id,
         name: newBike.name,
         size: newBike.size,
-        images: bikeData.images.length > 0 
-          ? [URL.createObjectURL(bikeData.images[0])]
-          : ["/placeholder.svg"],
+        images: imageUrls.length > 0 ? imageUrls : ["/placeholder.svg"],
         description: newBike.description,
         seller: newBike.seller,
         phone: newBike.phone,
